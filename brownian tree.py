@@ -21,32 +21,32 @@ def brownian(seed=(256,256) ,delt =1.5,deetee=0.05):
 
 
 #calls the motion function and the color picking function and draws on the image
-def drawbrown(im,size=512,first=(150,0,0),start=(256,256),D=1,dt=.05):
+def drawbrown(im,size=512,first=(150,0,0),start=None,D=1.5,dt=.05):
     '''
     function that will call the motion function, color function, and starting
     function. while the particle is still on the image it will continue to move
     the particle and update the color.
     '''
     #since we want to start at the center if  not given a start position and start is dependant on size, we use this if else statement to initialize start to be at the center
-    #if start ==(256,256) and size !=512:
-    #    start = (256,256)
-    #else:
-    #    start = (size/2,size/2)
-    #count is just to decide when to change a pixel's color, when to print stuff and when to show the current image
-    
-    count =1
-    brown =brownian(start,D,dt)
-    if (0,0)>=brown or brown>=(512,512):
-        return im.show()
+    start = (256,5)
+    if start ==None:
+        start = (size/2,size/2)
+        
+    #count is used to decide when to change a pixel's color, print stuff, and show the current image
+    count =2
     starting(im,start)
-    state = 'up'
+    brown =brownian(start,D,dt)
+    if (brown[0] or brown[1])<=0 or size<=(brown[0] or brown[1]):
+        return im.show()
+
     
     #counters for the color generating function and cross marking function
+    state = 'up'
     a=0
     b=50
     c=0
-    d=50
     filler = (0,0,0)
+    crossstate = 'up'
     
     while (0,0)<=brown<=(size-1,size-1):
         #parses the state,color, and two counters
@@ -58,7 +58,7 @@ def drawbrown(im,size=512,first=(150,0,0),start=(256,256),D=1,dt=.05):
         brown = brownian(brown,D,dt)
         
         #checks that the particle is still on the image        
-        if  (brown[0] or brown[1]) >(size-1) or (brown[0] or brown[1])<=1:
+        if  (brown[0] or brown[1]) >(size-1) or (brown[0] or brown[1])<=0:
             break
         
         count+=1
@@ -77,18 +77,19 @@ def drawbrown(im,size=512,first=(150,0,0),start=(256,256),D=1,dt=.05):
                 brown = (brown[0],brown[1])
                 
         
-        if count%200==0: 
+        if count%1000==0: 
             #prints out current iteration and position
             print '-'*24            
             print count,"     ",(int(round(brown[0])),int(round(brown[1]))) 
             
             #draws on the image
             im.putpixel((int(round(brown[0])),int(round(brown[1]))),first)
-        if count%10000 ==0:
-            temp2 = cross(im,(int(round(brown[0])),int(round(brown[1]))),filler, c,d)
-            cross(im,(int(round(brown[0])),int(round(brown[1]))))
-            
-            #shows that image
+        if count%50000 ==0:
+            temp2 = cross(im,(int(round(brown[0])),int(round(brown[1]))),filler,c)
+            filler = temp2[0]
+            c = temp2[1]
+            state = temp2[2]
+        #shows that image
         if count%50000==0:
             im.show()
     return im.show()
@@ -166,26 +167,35 @@ def starting(im,start=(256,256)):
     return 
 
 
-def cross(im,pos,filler = (0,0,0),i=0,j=50):
+def cross(im,pos,filler = (0,0,0),c=0,state = 'up'):
     '''
     places a small x mark at every nth iteration just to show the direction that
-    the motion is progressing in.
-    '''
-    if i<randint(1,50) and j>randint(1,10):
-        i+=30
-        j-=30
-    else:
-        filler = (0,filler[1]+int(round(255*random())),0)
+    the motion is progressing in. color gradually changes from black to green and back over the course of 450,000 iterations. 
+    ''' 
     
+    if filler[1]>=255 and c >=9:
+        filler = (0,filler[1]-30,0)
+        c-=1
+        state = 'down'
+    elif filler[1]<=0 and c<=0:
+        filler = (0,filler[1]+30,0)
+        c+=1
+        state = 'up'
+    elif state == 'up':
+        filler = (0,filler[1]+30,0)
+        c+=1
+    elif state =='down':
+        filler = (0,filler[1]-30,0)
+        c-=1    
     draw = ImageDraw.Draw(im)
     draw.line((pos[0]-2,pos[1]-2) + (pos[0]+2,pos[1]+2),fill=filler)
     draw.line((pos[0]-2,pos[1]+2) + (pos[0]+2,pos[1]-2),fill=filler)
     del draw
-    return (filler,i,j)
+    return (filler,c,state)
 
 
 if __name__ == '__main__':
-    size = 1024
+    size = 512
     D =1.75
     dt =.05
     first =(0,0,0)
